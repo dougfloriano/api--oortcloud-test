@@ -1,0 +1,9 @@
+@Library('deliveryPipeline') _
+
+def config = [:]
+
+config.'compiler' = 'gradle'
+config.'buildDir' = '/'
+config.'extended' = 'true'
+
+deliveryPipeline(config)

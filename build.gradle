@@ -1,0 +1,110 @@
+group = 'com.oortcloud.test'
+version = '1.0.0'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven'
+apply plugin: 'jacoco'
+apply plugin: 'org.sonarqube'
+
+apply plugin: 'org.springframework.boot'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenLocal()
+        maven {
+            url 'http://ci.tapaburaco.com.br/artifactory/maven-repo'
+            credentials {
+                username "$artifactoryUser"
+                password "$artifactoryPass"
+            }
+        }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.7.RELEASE")
+        classpath("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2")
+    }
+}
+
+jar {
+    baseName = 'api--oortcloud-test'
+    version = version
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url 'http://ci.tapaburaco.com.br/artifactory/maven-repo'
+        credentials {
+            username "$artifactoryUser"
+            password "$artifactoryPass"
+        }
+    }
+}
+
+dependencies {
+
+    // Java API
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.8'
+
+    // Validation
+    compile 'javax.validation:validation-api'
+
+    // REST
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.0'
+
+    // Spring Boot
+    compile "org.springframework.ws:spring-ws-core"
+    compile "org.springframework.boot:spring-boot-starter"
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-starter-test'
+    compile('org.springframework.cloud:spring-cloud-starter-sleuth')
+    compile group: 'org.zalando', name: 'logbook-spring-boot-starter', version: '1.5.5'
+
+    compile "org.springframework.boot:spring-boot-devtools"
+    compile "org.springframework.boot:spring-boot-configuration-processor"
+
+    compile group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.0'
+}
+
+apply from: "$rootDir/code-quality.gradle"
+
+ext {
+    springCloudVersion = 'Edgware.RELEASE'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+jacocoTestReport {
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['**/data/**', '**/config/**'])
+        })
+    }
+}
+
+sonarqube {
+    properties {
+        property 'sonar.inclusions', "**/usecase/**,**/converter/**,**/http/**,**/gateway/**"
+        property 'sonar.coverage.exclusions', "**/data/**"
+    }
+}
+
+task zip(type: Zip) {
+    archiveName "${baseName}-${jar.version}.zip"
+    from jar
+    from ('src/main/resources/ebextensions'){
+        into '.ebextensions'
+    }
+}
+
+compileJava.dependsOn(processResources)

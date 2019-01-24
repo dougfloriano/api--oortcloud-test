@@ -1,0 +1,30 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+
+apply plugin: 'checkstyle'
+apply plugin: 'findbugs'
+
+checkstyle {
+    sourceSets = []
+    configFile = file("${project.rootDir}/config/checkstyle/google_checks-6.13.xml")
+    toolVersion = "6.14.1"
+    ignoreFailures = true
+}
+
+findbugs {
+    sourceSets = []
+    ignoreFailures = true
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+checkstyleMain.finalizedBy(findbugsMain)
